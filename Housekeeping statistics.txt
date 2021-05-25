@@ -1,0 +1,128 @@
+--TOTALS--
+
+SELECT count(room) as "Total rooms" FROM room WHERE room_class IN ('STD', 'CLB')
+
+SELECT count(room) as "Total rooms to sell" FROM room WHERE room_class IN ('STD', 'CLB') AND room_status NOT IN ('OO')
+
+SELECT count(room) as "Total Clean" FROM room WHERE room_status IN ('CL') AND room_class IN ('STD', 'CLB')
+
+SELECT count(room) as "Total Clean" FROM room WHERE room_status IN ('DI') AND room_class IN ('STD', 'CLB')
+
+SELECT count(room) as "Total Pickup" FROM room WHERE room_status IN ('PU') AND room_class IN ('STD', 'CLB')
+
+SELECT count(room) as "Total Out Of Service" FROM room WHERE room_status IN ('OS') AND room_class IN ('STD', 'CLB')
+
+SELECT count(room) as "Total Out Of Order" FROM room WHERE room_status IN ('OO') AND room_class IN ('STD', 'CLB')
+
+--DETAILS - RESERVED--
+
+SELECT count(room) as "Reserved - Clean" FROM room WHERE room_status IN ('CL') AND room_class IN ('STD', 'CLB') AND room IN
+(SELECT DISTINCT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED') AND room_class IN ('STD', 'CLB') AND reservation_date = pms_p.business_date)
+
+SELECT count(room) as "Reserved - Dirty" FROM room WHERE room_status IN ('DI') AND room_class IN ('STD', 'CLB') AND room IN
+(SELECT DISTINCT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED') AND room_class IN ('STD', 'CLB') AND reservation_date = pms_p.business_date)
+
+SELECT count(room) as "Reserved - Out Of Service" FROM room WHERE room_status IN ('OS') AND room_class IN ('STD', 'CLB') AND room IN
+(SELECT DISTINCT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED') AND room_class IN ('STD', 'CLB') AND reservation_date = pms_p.business_date)
+
+SELECT count(room) as "Reserved - Pickup" FROM room WHERE room_status IN ('PU') AND room_class IN ('STD', 'CLB') AND room IN
+(SELECT DISTINCT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED') AND room_class IN ('STD', 'CLB') AND reservation_date = pms_p.business_date)
+
+--DETAILS NOT RESERVED--
+
+SELECT count(room) as "Not Reserved - Clean" FROM room WHERE room_status IN ('CL') AND room_class IN ('STD', 'CLB') AND room IN
+(SELECT DISTINCT room FROM reservation_daily_elements WHERE resv_status NOT IN ('RESERVED', 'CHECKED IN') AND room_class IN ('STD', 'CLB') AND reservation_date = pms_p.business_date)
+
+SELECT count(room) as "Not Reserved - Dirty" FROM room WHERE room_status IN ('DI') AND room_class IN ('STD', 'CLB') AND room IN
+(SELECT DISTINCT room FROM reservation_daily_elements WHERE resv_status NOT IN ('RESERVED', 'CHECKED IN') AND room_class IN ('STD', 'CLB') AND reservation_date = pms_p.business_date)
+
+SELECT count(room) as "Not Reserved - Out Of Service" FROM room WHERE room_status IN ('OS') AND room_class IN ('STD', 'CLB') AND room NOT IN
+(SELECT room as "Reserved - Out Of Service" FROM room WHERE room_status IN ('OS') AND room_class IN ('STD', 'CLB') AND room IN
+(SELECT DISTINCT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED') AND room_class IN ('STD', 'CLB') AND reservation_date = pms_p.business_date))
+
+SELECT count(room) as "Not Reserved - Pickup" FROM room WHERE room_status IN ('PU') AND room_class IN ('STD', 'CLB') AND room NOT IN
+(SELECT room FROM room WHERE room_status IN ('PU') AND room_class IN ('STD', 'CLB') AND room IN
+(SELECT DISTINCT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED') AND room_class IN ('STD', 'CLB') AND reservation_date = pms_p.business_date))
+
+
+
+
+
+
+
+--Rooms total and total without OO--
+
+
+UNION
+SELECT count(room) as "Total rooms" FROM room WHERE room_class IN ('STD', 'CLB') AND room_status NOT IN ('OO')
+
+SELECT count(room) FROM room WHERE room_class IN ('STD')
+UNION
+SELECT count(room) FROM room WHERE room_class IN ('STD') AND room_status NOT IN ('OO')
+
+SELECT count(room) FROM room WHERE room_class IN ('CLB')
+UNION
+SELECT count(room) FROM room WHERE room_class IN ('CLB') AND room_status NOT IN ('OO')
+
+--DETAILS RESERVED--
+
+SELECT room_status, count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED'))
+GROUP BY room_status
+
+SELECT count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_daily_el_seq IN
+(select rden.resv_daily_el_seq from reservation_daily_element_name rden where rden.resv_name_id in
+(select rn.resv_name_id from reservation_name rn where resv_status = 'RESERVED')))
+
+SELECT count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status = 'RESERVED')
+
+SELECT count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND fo_status = 'OCC' AND room_status = 'DI'
+
+SELECT count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room_status = 'CL' AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status = 'RESERVED')
+
+SELECT room_status, count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room_status = 'CL' AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED'))
+GROUP BY room_status
+UNION ALL
+SELECT room_status, count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room_status = 'DI' AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED'))
+GROUP BY room_status
+UNION ALL
+SELECT room_status, count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room_status = 'OS' AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED'))
+GROUP BY room_status
+UNION ALL
+SELECT room_status, count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room_status = 'PU' AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status IN ('RESERVED'))
+GROUP BY room_status
+
+--DETAILS NOT RESERVED--
+
+SELECT room_status, count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room_status = 'CL' AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status NOT IN ('RESERVED'))
+GROUP BY room_status
+UNION ALL
+SELECT room_status, count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room_status = 'DI' AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status NOT IN ('RESERVED'))
+GROUP BY room_status
+UNION ALL
+SELECT room_status, count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room_status = 'OS' AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status NOT IN ('RESERVED'))
+GROUP BY room_status
+UNION ALL
+SELECT room_status, count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room_status = 'PU' AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status NOT IN ('RESERVED'))
+GROUP BY room_status
+
+
+
+
+SELECT room_status as "Reserved rooms", count(room) FROM room WHERE room_class IN ('STD', 'CLB') AND room IN
+(SELECT room FROM reservation_daily_elements WHERE resv_status NOT IN ('RESERVED') AND resv_status NOT IN ('CHECKED IN') and reservation_date = pms_p.business_date)
+GROUP BY room_status
+
+
+
